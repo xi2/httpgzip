@@ -157,7 +157,6 @@ func (w *gzipResponseWriter) init() {
 		w.gw = gzipWriterPool.Get().(*gzip.Writer)
 		w.gw.Reset(w.ResponseWriter)
 		w.Header().Del("Content-Length")
-		w.Header().Del("Content-Range")
 		w.Header().Set("Content-Encoding", "gzip")
 	}
 	w.Header().Del("Accept-Ranges")
