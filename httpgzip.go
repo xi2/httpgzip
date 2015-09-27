@@ -33,7 +33,8 @@
 // (such as http.FileServer) by removing the Range header for requests
 // which prefer gzip encoding. This is necessary since Range requests
 // apply to the Gzipped content but the wrapped handler is not aware
-// of the compression when it writes byte ranges.
+// of the compression when it writes byte ranges. The Accept-Ranges
+// header is also stripped from corresponding responses.
 //
 // A Content-Type header is set using http.DetectContentType if it is
 // not set by the wrapped handler.
@@ -300,9 +301,10 @@ func acceptedEncodings(r *http.Request) []encoding {
 // The new http.Handler sets the Content-Encoding, Vary and
 // Content-Type headers in its responses as appropriate. If the
 // request expresses a preference for gzip encoding then any Range
-// headers are removed from the request before forwarding it to
-// h. This happens regardless of whether gzip encoding is eventually
-// used in the response or not.
+// headers are removed from the request before forwarding it to h and
+// Accept-Ranges headers are stripped from corresponding
+// responses. This happens regardless of whether gzip encoding is
+// eventually used in the response or not.
 func NewHandler(h http.Handler, contentTypes []string) http.Handler {
 	if contentTypes == nil {
 		contentTypes = DefaultContentTypes
