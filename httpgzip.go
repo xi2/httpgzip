@@ -147,10 +147,8 @@ func (w *gzipResponseWriter) init() {
 		}
 	}
 	var useGzip bool
-	if w.Header().Get("Content-Encoding") == "" {
-		switch {
-		case w.encs[0] == encGzip && gzipContentType,
-			w.encs[0] == encGzip && len(w.encs) == 1:
+	if w.Header().Get("Content-Encoding") == "" && w.encs[0] == encGzip {
+		if gzipContentType || len(w.encs) == 1 {
 			useGzip = true
 		}
 	}
