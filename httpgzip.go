@@ -97,14 +97,15 @@ var gzipBufPool = sync.Pool{
 	New: func() interface{} { return new(bytes.Buffer) },
 }
 
-// A gzipResponseWriter is a modified http.ResponseWriter. If the
-// request only accepts Gzip encoding or the content to be written is
-// of a type contained in ctMap and the request prefers Gzip encoding
-// then the response is compressed and the Content-Encoding header is
-// set. Otherwise a gzipResponseWriter behaves mostly like a normal
-// http.ResponseWriter. It is important to call the Close method when
-// writing is finished in order to flush and close the Writer. The
-// encoding slice encs must contain at least one encoding.
+// A gzipResponseWriter is a modified http.ResponseWriter. It adds
+// Gzip compression to all responses when encs only allows gzip
+// encoding, or to responses greater than 512 bytes and whose content
+// type is in ctMap when encs prefers gzip encoding. It also sets the
+// Content-Encoding and Content-Type headers when appropriate. It is
+// important to call the Close method when writing is finished in
+// order to flush and close the Writer. The slice encs must contain
+// only encodings from {encGzip,encIdentity} and contain at least one
+// encoding.
 type gzipResponseWriter struct {
 	http.ResponseWriter
 	httpStatus int
@@ -148,7 +149,7 @@ func (w *gzipResponseWriter) init() {
 	}
 	var useGzip bool
 	if w.Header().Get("Content-Encoding") == "" && w.encs[0] == encGzip {
-		if gzipContentType || len(w.encs) == 1 {
+		if gzipContentType && w.buf.Len() >= 512 || len(w.encs) == 1 {
 			useGzip = true
 		}
 	}
@@ -291,9 +292,10 @@ func acceptedEncodings(r *http.Request) []encoding {
 }
 
 // NewHandler returns a new http.Handler which wraps a handler h
-// adding Gzip compression to responses whose content types are in
-// contentTypes (unless the corresponding request does not allow or
-// prefer Gzip compression). If contentTypes is nil then it is set to
+// adding Gzip compression to responses whose requests only allow gzip
+// encoding, or to responses greater than 512 bytes whose content
+// types are in contentTypes and whose requests prefer gzip
+// encoding. If contentTypes is nil then it is set to
 // DefaultContentTypes.
 //
 // The new http.Handler sets the Content-Encoding, Vary and
