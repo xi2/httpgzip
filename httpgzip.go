@@ -23,16 +23,20 @@
 // http.Handler adding Gzip compression for appropriate requests.
 //
 // It attempts to properly parse the request's Accept-Encoding header
-// according to RFC 2616 and does not just do a
-// strings.Contains(header,"gzip"). It will serve either gzip or
-// identity content codings (or return 406 Not Acceptable status if it
-// can do neither).
+// according to RFC 2616 and does not do a simple string search for
+// "gzip" (which will fail to do the correct thing for values such as
+// "*" or "identity,gzip;q=0"). It will serve either gzip or identity
+// content codings, or return 406 Not Acceptable status if it can do
+// neither.
 //
-// It works correctly with handlers such as http.FileServer which
-// honour Range request headers by removing the Range header when
-// requests prefer gzip encoding. This is necessary since Range
-// applies to the Gzipped content and the wrapped handler is not aware
+// It works correctly with handlers which honour Range request headers
+// (such as http.FileServer) by removing the Range header for requests
+// which prefer gzip encoding. This is necessary since Range requests
+// apply to the Gzipped content but the wrapped handler is not aware
 // of the compression when it writes byte ranges.
+//
+// A Content-Type header is set using http.DetectContentType if it is
+// not set by the wrapped handler.
 package httpgzip // import "xi2.org/x/httpgzip"
 
 import (
