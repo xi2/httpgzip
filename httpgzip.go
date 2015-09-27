@@ -25,31 +25,25 @@
 // It attempts to properly parse the request's Accept-Encoding header
 // according to RFC 2616 and does not just do a
 // strings.Contains(header,"gzip"). It will serve either gzip or
-// identity content codings (or return 406 Not Acceptable status if
+// identity content codings (or return 406 Not Acceptable status if it
 // can do neither).
 //
 // It works correctly with handlers such as http.FileServer which
-// honour Range requests by removing the Range header when requests
-// prefer gzip encoding. This is necessary since Range applies to the
-// Gzipped content and the wrapped handler is not aware of the
-// compression when it writes byte ranges.
+// honour Range request headers by removing the Range header when
+// requests prefer gzip encoding. This is necessary since Range
+// applies to the Gzipped content and the wrapped handler is not aware
+// of the compression when it writes byte ranges.
 package httpgzip // import "xi2.org/x/httpgzip"
 
 import (
 	"bytes"
 	"compress/gzip"
-	"errors"
 	"mime"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 )
-
-// ErrStatusNotAcceptable is returned by Write calls to the
-// http.ResponseWriter within the wrapped http.Handler if a
-// http.StatusNotAcceptable has been written by the outer Handler.
-var ErrStatusNotAcceptable = errors.New("httpgzip: http.StatusNotAcceptable has been written")
 
 // DefaultContentTypes is the default set of content types with which
 // a Handler applies Gzip compression. This set originates from the
@@ -99,12 +93,13 @@ var gzipBufPool = sync.Pool{
 }
 
 // A gzipResponseWriter is a modified http.ResponseWriter. If the
-// content to be written is of a type contained in its contentTypes
-// field and the request allows and prefers Gzip compression then the
-// response is compressed and the Content-Encoding header is
-// set. Otherwise a gzipResponseWriter behaves mostly like a normal
-// http.ResponseWriter. It is important to call the Close method when
-// writing is finished in order to flush and close the Writer.
+// request only accepts Gzip encoding or the content to be written is
+// of a type contained in contentTypes and the request prefers Gzip
+// encoding then the response is compressed and the Content-Encoding
+// header is set. Otherwise a gzipResponseWriter behaves mostly like a
+// normal http.ResponseWriter. It is important to call the Close
+// method when writing is finished in order to flush and close the
+// Writer. The encoding slice encs must contain at least one encoding.
 type gzipResponseWriter struct {
 	http.ResponseWriter
 	httpStatus   int
@@ -140,14 +135,18 @@ func (w *gzipResponseWriter) init() {
 	} else {
 		ct = http.DetectContentType(w.buf.Bytes())
 	}
+	var gzipContentType bool
+	if mt, _, err := mime.ParseMediaType(ct); err == nil {
+		if _, ok := w.contentTypes[mt]; ok {
+			gzipContentType = true
+		}
+	}
 	var useGzip bool
-	if preferGzipToIdentity(w.encs) {
-		if w.Header().Get("Content-Encoding") == "" {
-			if mt, _, err := mime.ParseMediaType(ct); err == nil {
-				if _, ok := w.contentTypes[mt]; ok {
-					useGzip = true
-				}
-			}
+	if w.Header().Get("Content-Encoding") == "" {
+		switch {
+		case w.encs[0] == encGzip && gzipContentType,
+			w.encs[0] == encGzip && len(w.encs) == 1:
+			useGzip = true
 		}
 	}
 	if useGzip {
@@ -157,10 +156,6 @@ func (w *gzipResponseWriter) init() {
 		w.Header().Del("Content-Length")
 		w.Header().Del("Content-Range")
 		w.Header().Set("Content-Encoding", "gzip")
-	} else {
-		if !acceptIdentity(w.encs) {
-			w.httpStatus = http.StatusNotAcceptable
-		}
 	}
 	if cth == "" {
 		w.Header().Set("Content-Type", ct)
@@ -185,8 +180,6 @@ func (w *gzipResponseWriter) Write(p []byte) (int, error) {
 		}()
 	}
 	switch {
-	case w.httpStatus == http.StatusNotAcceptable:
-		err = ErrStatusNotAcceptable
 	case w.gw != nil:
 		n, err = w.gw.Write(p)
 	default:
@@ -213,8 +206,6 @@ func (w *gzipResponseWriter) Close() (err error) {
 			w.buf = nil
 		}()
 		switch {
-		case w.httpStatus == http.StatusNotAcceptable:
-			// noop
 		case w.gw != nil:
 			_, err = w.gw.Write(p)
 		default:
@@ -297,22 +288,6 @@ func acceptedEncodings(r *http.Request) []encoding {
 	}
 }
 
-// acceptIdentity returns true if identity encoding is accepted.
-func acceptIdentity(encs []encoding) bool {
-	for _, e := range encs {
-		if e == encIdentity {
-			return true
-		}
-	}
-	return false
-}
-
-// preferGzipToIdentity returns true if gzip encoding is accepted and
-// preferred to identity encoding.
-func preferGzipToIdentity(encs []encoding) bool {
-	return len(encs) > 0 && encs[0] == encGzip
-}
-
 // NewHandler returns a new http.Handler which wraps a handler h
 // adding Gzip compression to responses whose content types are in
 // contentTypes (unless the corresponding request does not allow or
@@ -321,7 +296,7 @@ func preferGzipToIdentity(encs []encoding) bool {
 //
 // The new http.Handler sets the Content-Encoding, Vary and
 // Content-Type headers in its responses as appropriate. If the
-// request expresses a preference for gzip encoding then any "Range"
+// request expresses a preference for gzip encoding then any Range
 // headers are removed from the request before forwarding it to
 // h. This happens regardless of whether gzip encoding is eventually
 // used in the response or not.
@@ -334,7 +309,12 @@ func NewHandler(h http.Handler, contentTypes map[string]struct{}) http.Handler {
 		w.Header().Add("Vary", "Accept-Encoding")
 		// check client's accepted encodings
 		encs := acceptedEncodings(r)
-		if preferGzipToIdentity(encs) {
+		// return if no acceptable encodings
+		if len(encs) == 0 {
+			w.WriteHeader(http.StatusNotAcceptable)
+			return
+		}
+		if encs[0] == encGzip {
 			// cannot accept Range requests for possibly gzipped
 			// responses
 			r.Header.Del("Range")
