@@ -49,43 +49,43 @@ import (
 	"sync"
 )
 
-// DefaultContentTypes is the default set of content types with which
-// a Handler applies Gzip compression. This set originates from the
+// DefaultContentTypes is the default list of content types with which
+// a Handler applies Gzip compression. This list originates from the
 // file compression.conf within the Apache configuration found at
 // https://html5boilerplate.com/.
-var DefaultContentTypes = map[string]struct{}{
-	"application/atom+xml":                struct{}{},
-	"application/javascript":              struct{}{},
-	"application/json":                    struct{}{},
-	"application/ld+json":                 struct{}{},
-	"application/manifest+json":           struct{}{},
-	"application/rdf+xml":                 struct{}{},
-	"application/rss+xml":                 struct{}{},
-	"application/schema+json":             struct{}{},
-	"application/vnd.geo+json":            struct{}{},
-	"application/vnd.ms-fontobject":       struct{}{},
-	"application/x-font-ttf":              struct{}{},
-	"application/x-javascript":            struct{}{},
-	"application/x-web-app-manifest+json": struct{}{},
-	"application/xhtml+xml":               struct{}{},
-	"application/xml":                     struct{}{},
-	"font/eot":                            struct{}{},
-	"font/opentype":                       struct{}{},
-	"image/bmp":                           struct{}{},
-	"image/svg+xml":                       struct{}{},
-	"image/vnd.microsoft.icon":            struct{}{},
-	"image/x-icon":                        struct{}{},
-	"text/cache-manifest":                 struct{}{},
-	"text/css":                            struct{}{},
-	"text/html":                           struct{}{},
-	"text/javascript":                     struct{}{},
-	"text/plain":                          struct{}{},
-	"text/vcard":                          struct{}{},
-	"text/vnd.rim.location.xloc":          struct{}{},
-	"text/vtt":                            struct{}{},
-	"text/x-component":                    struct{}{},
-	"text/x-cross-domain-policy":          struct{}{},
-	"text/xml":                            struct{}{},
+var DefaultContentTypes = []string{
+	"application/atom+xml",
+	"application/javascript",
+	"application/json",
+	"application/ld+json",
+	"application/manifest+json",
+	"application/rdf+xml",
+	"application/rss+xml",
+	"application/schema+json",
+	"application/vnd.geo+json",
+	"application/vnd.ms-fontobject",
+	"application/x-font-ttf",
+	"application/x-javascript",
+	"application/x-web-app-manifest+json",
+	"application/xhtml+xml",
+	"application/xml",
+	"font/eot",
+	"font/opentype",
+	"image/bmp",
+	"image/svg+xml",
+	"image/vnd.microsoft.icon",
+	"image/x-icon",
+	"text/cache-manifest",
+	"text/css",
+	"text/html",
+	"text/javascript",
+	"text/plain",
+	"text/vcard",
+	"text/vnd.rim.location.xloc",
+	"text/vtt",
+	"text/x-component",
+	"text/x-cross-domain-policy",
+	"text/xml",
 }
 
 var gzipWriterPool = sync.Pool{
@@ -98,28 +98,28 @@ var gzipBufPool = sync.Pool{
 
 // A gzipResponseWriter is a modified http.ResponseWriter. If the
 // request only accepts Gzip encoding or the content to be written is
-// of a type contained in contentTypes and the request prefers Gzip
-// encoding then the response is compressed and the Content-Encoding
-// header is set. Otherwise a gzipResponseWriter behaves mostly like a
-// normal http.ResponseWriter. It is important to call the Close
-// method when writing is finished in order to flush and close the
-// Writer. The encoding slice encs must contain at least one encoding.
+// of a type contained in ctMap and the request prefers Gzip encoding
+// then the response is compressed and the Content-Encoding header is
+// set. Otherwise a gzipResponseWriter behaves mostly like a normal
+// http.ResponseWriter. It is important to call the Close method when
+// writing is finished in order to flush and close the Writer. The
+// encoding slice encs must contain at least one encoding.
 type gzipResponseWriter struct {
 	http.ResponseWriter
-	httpStatus   int
-	contentTypes map[string]struct{}
-	encs         []encoding
-	gw           *gzip.Writer
-	buf          *bytes.Buffer
+	httpStatus int
+	ctMap      map[string]struct{}
+	encs       []encoding
+	gw         *gzip.Writer
+	buf        *bytes.Buffer
 }
 
-func newGzipResponseWriter(w http.ResponseWriter, contentTypes map[string]struct{}, encs []encoding) *gzipResponseWriter {
+func newGzipResponseWriter(w http.ResponseWriter, ctMap map[string]struct{}, encs []encoding) *gzipResponseWriter {
 	buf := gzipBufPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	return &gzipResponseWriter{
 		ResponseWriter: w,
 		httpStatus:     http.StatusOK,
-		contentTypes:   contentTypes,
+		ctMap:          ctMap,
 		encs:           encs,
 		buf:            buf}
 }
@@ -141,7 +141,7 @@ func (w *gzipResponseWriter) init() {
 	}
 	var gzipContentType bool
 	if mt, _, err := mime.ParseMediaType(ct); err == nil {
-		if _, ok := w.contentTypes[mt]; ok {
+		if _, ok := w.ctMap[mt]; ok {
 			gzipContentType = true
 		}
 	}
@@ -304,9 +304,13 @@ func acceptedEncodings(r *http.Request) []encoding {
 // headers are removed from the request before forwarding it to
 // h. This happens regardless of whether gzip encoding is eventually
 // used in the response or not.
-func NewHandler(h http.Handler, contentTypes map[string]struct{}) http.Handler {
+func NewHandler(h http.Handler, contentTypes []string) http.Handler {
 	if contentTypes == nil {
 		contentTypes = DefaultContentTypes
+	}
+	ctMap := map[string]struct{}{}
+	for _, ct := range contentTypes {
+		ctMap[ct] = struct{}{}
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// add Vary header
@@ -323,7 +327,7 @@ func NewHandler(h http.Handler, contentTypes map[string]struct{}) http.Handler {
 			// responses
 			r.Header.Del("Range")
 			// create new ResponseWriter
-			w = newGzipResponseWriter(w, contentTypes, encs)
+			w = newGzipResponseWriter(w, ctMap, encs)
 			defer w.(*gzipResponseWriter).Close()
 		}
 		// call original handler's ServeHTTP
