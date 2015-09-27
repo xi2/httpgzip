@@ -214,7 +214,7 @@ func (w *gzipResponseWriter) Close() (err error) {
 		}()
 		switch {
 		case w.httpStatus == http.StatusNotAcceptable:
-			err = ErrStatusNotAcceptable
+			// noop
 		case w.gw != nil:
 			_, err = w.gw.Write(p)
 		default:
