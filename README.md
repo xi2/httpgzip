@@ -1,7 +1,7 @@
 # Httpgzip
 
-Package httpgzip implements an http.Handler which wraps an existing
-http.Handler adding Gzip compression for appropriate requests.
+Package httpgzip implements an http.Handler wrapper adding Gzip compression
+for appropriate requests.
 
 Documentation at <https://godoc.org/xi2.org/x/httpgzip>.
 

@@ -19,8 +19,8 @@
    along with Httpgzip.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// Package httpgzip implements an http.Handler which wraps an existing
-// http.Handler adding Gzip compression for appropriate requests.
+// Package httpgzip implements an http.Handler wrapper adding Gzip
+// compression for appropriate requests.
 //
 // It attempts to properly parse the request's Accept-Encoding header
 // according to RFC 2616 and does not do a simple string search for
