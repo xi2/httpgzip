@@ -322,9 +322,10 @@ func NewHandler(h http.Handler, contentTypes map[string]struct{}) http.Handler {
 			// cannot accept Range requests for possibly gzipped
 			// responses
 			r.Header.Del("Range")
+			// create new ResponseWriter
+			w = newGzipResponseWriter(w, contentTypes, encs)
+			defer w.(*gzipResponseWriter).Close()
 		}
-		w = newGzipResponseWriter(w, contentTypes, encs)
-		defer w.(*gzipResponseWriter).Close()
 		// call original handler's ServeHTTP
 		h.ServeHTTP(w, r)
 	})
