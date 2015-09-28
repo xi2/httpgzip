@@ -102,8 +102,8 @@ var gzipBufPool = sync.Pool{
 // gzip compression to certain responses, and there are two cases
 // where this is done. Case 1 is when encs only allows gzip encoding
 // and forbids identity. Case 2 is when encs prefers gzip encoding,
-// the response is greater than 512 bytes and the response's content
-// type is in ctMap.
+// the response is at least 512 bytes and the response's content type
+// is in ctMap.
 //
 // A gzipResponseWriter sets the Content-Encoding and Content-Type
 // headers when appropriate. It is important to call the Close method
@@ -300,9 +300,9 @@ func acceptedEncodings(r *http.Request) []encoding {
 // where gzip compression is done. Case 1 is responses whose requests
 // only allow gzip encoding and forbid identity encoding (identity
 // encoding meaning no encoding). Case 2 is responses whose requests
-// prefer gzip encoding, whose size is greater than 512 bytes and
-// whose content types are in contentTypes. If contentTypes is nil
-// then DefaultContentTypes is considered instead.
+// prefer gzip encoding, whose size is at least 512 bytes and whose
+// content types are in contentTypes. If contentTypes is nil then
+// DefaultContentTypes is considered instead.
 //
 // The new http.Handler sets the Content-Encoding, Vary and
 // Content-Type headers in its responses as appropriate. If a request
