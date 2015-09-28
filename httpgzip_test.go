@@ -310,41 +310,14 @@ func parseHeader(header string) (key, value string) {
 	return
 }
 
-// fsGetFile gets a file from an http.FileServer (wrapped with httpgzip)
-// serving files from the testdata directory. The request has the
-// given headers added. fsGetFile returns the http.Response (with Body
+// getPath starts a temporary test server using handler h (wrapped
+// with httpgzip) and requests the given path. The request has the
+// given headers added. getPath returns the http.Response (with Body
 // closed) and the result of reading the response Body.
-func fsGetFile(t *testing.T, file string, headers []string) (*http.Response, []byte) {
-	ts := httptest.NewServer(
-		httpgzip.NewHandler(http.FileServer(http.Dir("testdata")), nil))
-	defer ts.Close()
-	req, err := http.NewRequest("GET", ts.URL+"/"+file, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, h := range headers {
-		req.Header.Add(parseHeader(h))
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return res, body
-}
-
-// getRootPath starts a temporary test server using handler h (wrapped
-// with httpgzip) and requests the path "/". The request has the given
-// headers added. getRootPath returns the http.Response (with Body
-// closed) and the result of reading the response Body.
-func getRootPath(t *testing.T, h http.Handler, headers []string) (*http.Response, []byte) {
+func getPath(t *testing.T, h http.Handler, path string, headers []string) (*http.Response, []byte) {
 	ts := httptest.NewServer(httpgzip.NewHandler(h, nil))
 	defer ts.Close()
-	req, err := http.NewRequest("GET", ts.URL+"/", nil)
+	req, err := http.NewRequest("GET", ts.URL+path, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -363,10 +336,12 @@ func getRootPath(t *testing.T, h http.Handler, headers []string) (*http.Response
 	return res, body
 }
 
-// TestFileServer runs all http.FileServer tests in fsTests
+// TestFileServer runs all tests in fsTests against an http.FileServer
+// serving the testdata directory.
 func TestFileServer(t *testing.T) {
+	h := http.FileServer(http.Dir("testdata"))
 	for _, fst := range fsTests {
-		res, body := fsGetFile(t, fst.reqFile, fst.reqHeaders)
+		res, body := getPath(t, h, "/"+fst.reqFile, fst.reqHeaders)
 		if res.StatusCode != fst.resCode {
 			t.Fatalf(
 				"\nfile %s, request headers %v\n"+
@@ -397,16 +372,15 @@ func TestFileServer(t *testing.T) {
 // the Content-Type and it is not left to the standard library (which
 // would set it to "application/x-gzip").
 func TestDetectContentType(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, err := ioutil.ReadFile(
-			filepath.Join("testdata", "4096bytes.txt"))
-		if err != nil {
-			http.Error(w, "Error", http.StatusInternalServerError)
-			return
-		}
+	data, err := ioutil.ReadFile(
+		filepath.Join("testdata", "4096bytes.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.Copy(w, bytes.NewBuffer(data))
 	})
-	res, _ := getRootPath(t, handler, []string{"Accept-Encoding: gzip"})
+	res, _ := getPath(t, h, "/", []string{"Accept-Encoding: gzip"})
 	expected := "text/plain; charset=utf-8"
 	if res.Header.Get("Content-Type") != expected {
 		t.Fatalf(
@@ -421,17 +395,16 @@ func TestDetectContentType(t *testing.T) {
 // httpgzip does not mess with the content encoding and serves the
 // file expected.
 func TestPresetContentEncoding(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, err := ioutil.ReadFile(
-			filepath.Join("testdata", "4096bytes.txt"))
-		if err != nil {
-			http.Error(w, "Error", http.StatusInternalServerError)
-			return
-		}
+	data, err := ioutil.ReadFile(
+		filepath.Join("testdata", "4096bytes.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Encoding", "text/foobar")
 		_, _ = io.Copy(w, bytes.NewBuffer(data))
 	})
-	res, body := getRootPath(t, handler, []string{"Accept-Encoding: gzip"})
+	res, body := getPath(t, h, "/", []string{"Accept-Encoding: gzip"})
 	expectedEnc := "text/foobar"
 	if res.Header.Get("Content-Encoding") != expectedEnc {
 		t.Fatalf(
