@@ -359,7 +359,7 @@ func TestFileServer(t *testing.T) {
 			if res.Header.Get(k) != v {
 				t.Fatalf(
 					"\nfile %s, request headers %v\n"+
-						"expected response header %s: %s, got %s %s\n\n",
+						"expected response header %s: %s, got %s: %s\n",
 					fst.reqFile, fst.reqHeaders, k, v, k, res.Header.Get(k))
 			}
 		}
@@ -367,9 +367,9 @@ func TestFileServer(t *testing.T) {
 }
 
 // TestDetectContentType creates a handler serving a text file which
-// does not set the content type, wraps it with httpgzip, and requests
+// does not set Content-Type, wraps it with httpgzip, and requests
 // that file with Accept-Encoding: gzip. It checks that httpgzip sets
-// the Content-Type and it is not left to the standard library (which
+// Content-Type and it is not left to the standard library (which
 // would set it to "application/x-gzip").
 func TestDetectContentType(t *testing.T) {
 	data, err := ioutil.ReadFile(
@@ -390,10 +390,10 @@ func TestDetectContentType(t *testing.T) {
 }
 
 // TestPresetContentEncoding creates a handler serving a text file
-// which sets Content-Encoding, wraps it with httpgzip, and
-// requests that file with Accept-Encoding: gzip. It checks that
-// httpgzip does not mess with the content encoding and serves the
-// file expected.
+// which sets Content-Encoding, wraps it with httpgzip, and requests
+// that file with Accept-Encoding: gzip. It checks that httpgzip does
+// not mess with Content-Encoding and serves the file without
+// compression as expected.
 func TestPresetContentEncoding(t *testing.T) {
 	data, err := ioutil.ReadFile(
 		filepath.Join("testdata", "4096bytes.txt"))
