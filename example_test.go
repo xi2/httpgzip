@@ -29,7 +29,7 @@ import (
 )
 
 // This example is the http.FileServer example from the standard
-// library but with Gzip compression added.
+// library but with gzip compression added.
 func ExampleNewHandler() {
 	// Simple static webserver:
 	log.Fatal(http.ListenAndServe(":8080",

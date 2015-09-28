@@ -19,7 +19,7 @@
    along with Httpgzip.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// Package httpgzip implements an http.Handler wrapper adding Gzip
+// Package httpgzip implements an http.Handler wrapper adding gzip
 // compression for appropriate requests.
 //
 // It attempts to properly parse the request's Accept-Encoding header
@@ -32,7 +32,7 @@
 // It works correctly with handlers which honour Range request headers
 // (such as http.FileServer) by removing the Range header for requests
 // which prefer gzip encoding. This is necessary since Range requests
-// apply to the Gzipped content but the wrapped handler is not aware
+// apply to the gzipped content but the wrapped handler is not aware
 // of the compression when it writes byte ranges. The Accept-Ranges
 // header is also stripped from corresponding responses.
 //
@@ -51,7 +51,7 @@ import (
 )
 
 // DefaultContentTypes is the default list of content types with which
-// a Handler applies Gzip compression. This list originates from the
+// a Handler applies gzip compression. This list originates from the
 // file compression.conf within the Apache configuration found at
 // https://html5boilerplate.com/.
 var DefaultContentTypes = []string{
@@ -98,7 +98,7 @@ var gzipBufPool = sync.Pool{
 }
 
 // A gzipResponseWriter is a modified http.ResponseWriter. It adds
-// Gzip compression to all responses when encs only allows gzip
+// gzip compression to all responses when encs only allows gzip
 // encoding, or to responses greater than 512 bytes and whose content
 // type is in ctMap when encs prefers gzip encoding. It also sets the
 // Content-Encoding and Content-Type headers when appropriate. It is
@@ -292,7 +292,7 @@ func acceptedEncodings(r *http.Request) []encoding {
 }
 
 // NewHandler returns a new http.Handler which wraps a handler h
-// adding Gzip compression to responses whose requests only allow gzip
+// adding gzip compression to responses whose requests only allow gzip
 // encoding, or to responses greater than 512 bytes whose content
 // types are in contentTypes and whose requests prefer gzip
 // encoding. If contentTypes is nil then it is set to
