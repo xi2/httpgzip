@@ -50,8 +50,8 @@ import (
 	"sync"
 )
 
-// DefaultContentTypes is the default list of content types with which
-// a Handler applies gzip compression. This list originates from the
+// DefaultContentTypes is the default list of content types for which
+// a Handler considers gzip compression. This list originates from the
 // file compression.conf within the Apache configuration found at
 // https://html5boilerplate.com/.
 var DefaultContentTypes = []string{
@@ -98,14 +98,17 @@ var gzipBufPool = sync.Pool{
 }
 
 // A gzipResponseWriter is a modified http.ResponseWriter. It adds
-// gzip compression to all responses when encs only allows gzip
-// encoding, or to responses greater than 512 bytes and whose content
-// type is in ctMap when encs prefers gzip encoding. It also sets the
-// Content-Encoding and Content-Type headers when appropriate. It is
-// important to call the Close method when writing is finished in
-// order to flush and close the Writer. The slice encs must contain
-// only encodings from {encGzip,encIdentity} and contain at least one
-// encoding.
+// gzip compression to certain responses, and there are two cases
+// where this is done. Case 1 is when encs only allows gzip encoding
+// and forbids identity. Case 2 is when encs prefers gzip encoding,
+// the response is greater than 512 bytes and the response's content
+// type is in ctMap.
+//
+// A gzipResponseWriter sets the Content-Encoding and Content-Type
+// headers when appropriate. It is important to call the Close method
+// when writing is finished in order to flush and close the
+// gzipResponseWriter. The slice encs must contain only encodings from
+// {encGzip,encIdentity} and contain at least one encoding.
 type gzipResponseWriter struct {
 	http.ResponseWriter
 	httpStatus int
@@ -292,16 +295,18 @@ func acceptedEncodings(r *http.Request) []encoding {
 }
 
 // NewHandler returns a new http.Handler which wraps a handler h
-// adding gzip compression to responses whose requests only allow gzip
-// encoding, or to responses greater than 512 bytes whose content
-// types are in contentTypes and whose requests prefer gzip
-// encoding. If contentTypes is nil then it is set to
-// DefaultContentTypes.
+// adding gzip compression to certain responses. There are two cases
+// where gzip compression is done. Case 1 is responses whose requests
+// only allow gzip encoding and forbid identity encoding (identity
+// encoding meaning no encoding). Case 2 is responses whose requests
+// prefer gzip encoding, whose size is greater than 512 bytes and
+// whose content types are in contentTypes. If contentTypes is nil
+// then DefaultContentTypes is considered instead.
 //
 // The new http.Handler sets the Content-Encoding, Vary and
-// Content-Type headers in its responses as appropriate. If the
-// request expresses a preference for gzip encoding then any Range
-// headers are removed from the request before forwarding it to h and
+// Content-Type headers in its responses as appropriate. If a request
+// expresses a preference for gzip encoding then any Range headers are
+// removed from the request before it is passed through to h and
 // Accept-Ranges headers are stripped from corresponding
 // responses. This happens regardless of whether gzip encoding is
 // eventually used in the response or not.
