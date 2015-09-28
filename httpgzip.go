@@ -36,8 +36,9 @@
 // of the compression when it writes byte ranges. The Accept-Ranges
 // header is also stripped from corresponding responses.
 //
-// A Content-Type header is set using http.DetectContentType if it is
-// not set by the wrapped handler.
+// For requests which prefer gzip encoding a Content-Type header is
+// set using http.DetectContentType if it is not set by the wrapped
+// handler.
 package httpgzip // import "xi2.org/x/httpgzip"
 
 import (
