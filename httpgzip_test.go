@@ -397,9 +397,10 @@ func TestFileServer(t *testing.T) {
 		for _, h := range fst.resHeaders {
 			k, v := parseHeader(h)
 			if k == "Content-Length" && v != "" && isGzip(body) {
-				// Content-Length: XXX is special cased. if body is gzipped
-				// fail on match instead of a non-match
-				if res.Header.Get(k) == v {
+				// Content-Length: XXX is special cased. if body is
+				// gzipped fail on match instead of a non-match. But
+				// still check a value is returned.
+				if res.Header.Get(k) == v || res.Header.Get(k) == "" {
 					t.Fatalf(
 						"\nfile %s, request headers %v\n"+
 							"unexpected response header %s: %s\n",
