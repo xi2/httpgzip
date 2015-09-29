@@ -26,8 +26,8 @@
 // according to RFC 2616 and does not do a simple string search for
 // "gzip" (which will fail to do the correct thing for values such as
 // "*" or "identity,gzip;q=0"). It will serve either gzip or identity
-// content codings, or return 406 Not Acceptable status if it can do
-// neither.
+// content codings (identity meaning no encoding), or return 406 Not
+// Acceptable status if it can do neither.
 //
 // It works correctly with handlers which honour Range request headers
 // (such as http.FileServer) by removing the Range header for requests
