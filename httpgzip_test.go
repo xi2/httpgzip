@@ -49,7 +49,7 @@ var fsTests = []fsRequestResponse{
 	// requesting gzip encoding
 	{
 		reqFile:    "0bytes.txt",
-		reqHeaders: []string{"Accept-Encoding: "},
+		reqHeaders: nil,
 		resCode:    http.StatusOK,
 		resLength:  0,
 		resHeaders: []string{
@@ -61,7 +61,7 @@ var fsTests = []fsRequestResponse{
 	},
 	{
 		reqFile:    "0bytes.bin",
-		reqHeaders: []string{"Accept-Encoding: "},
+		reqHeaders: nil,
 		resCode:    http.StatusOK,
 		resLength:  0,
 		resHeaders: []string{
@@ -97,7 +97,7 @@ var fsTests = []fsRequestResponse{
 	},
 	{
 		reqFile:    "511bytes.txt",
-		reqHeaders: []string{"Accept-Encoding: "},
+		reqHeaders: nil,
 		resCode:    http.StatusOK,
 		resLength:  511,
 		resHeaders: []string{
@@ -109,7 +109,7 @@ var fsTests = []fsRequestResponse{
 	},
 	{
 		reqFile:    "511bytes.bin",
-		reqHeaders: []string{"Accept-Encoding: "},
+		reqHeaders: nil,
 		resCode:    http.StatusOK,
 		resLength:  511,
 		resHeaders: []string{
@@ -145,7 +145,7 @@ var fsTests = []fsRequestResponse{
 	},
 	{
 		reqFile:    "512bytes.txt",
-		reqHeaders: []string{"Accept-Encoding: "},
+		reqHeaders: nil,
 		resCode:    http.StatusOK,
 		resLength:  512,
 		resHeaders: []string{
@@ -157,7 +157,7 @@ var fsTests = []fsRequestResponse{
 	},
 	{
 		reqFile:    "512bytes.bin",
-		reqHeaders: []string{"Accept-Encoding: "},
+		reqHeaders: nil,
 		resCode:    http.StatusOK,
 		resLength:  512,
 		resHeaders: []string{
@@ -193,7 +193,7 @@ var fsTests = []fsRequestResponse{
 	},
 	{
 		reqFile:    "4096bytes.txt",
-		reqHeaders: []string{"Accept-Encoding: "},
+		reqHeaders: nil,
 		resCode:    http.StatusOK,
 		resLength:  4096,
 		resHeaders: []string{
@@ -205,7 +205,7 @@ var fsTests = []fsRequestResponse{
 	},
 	{
 		reqFile:    "4096bytes.bin",
-		reqHeaders: []string{"Accept-Encoding: "},
+		reqHeaders: nil,
 		resCode:    http.StatusOK,
 		resLength:  4096,
 		resHeaders: []string{
@@ -353,7 +353,10 @@ func getPath(t *testing.T, h http.Handler, level int, path string, headers []str
 	for _, h := range headers {
 		req.Header.Add(parseHeader(h))
 	}
-	res, err := http.DefaultClient.Do(req)
+	// explicitly disable automatic sending of "Accept-Encoding"
+	transport := &http.Transport{DisableCompression: true}
+	client := http.Client{Transport: transport}
+	res, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
