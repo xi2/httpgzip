@@ -40,7 +40,7 @@
 // set using http.DetectContentType if it is not set by the wrapped
 // handler.
 //
-// Using the optimized gzip compressor by Klaus Post
+// Using an optimized gzip compressor
 //
 // By default, httpgzip uses the standard library gzip implementation
 // to minimize dependencies. However, there is an excellent optimized
