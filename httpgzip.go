@@ -253,7 +253,7 @@ func (w *gzipResponseWriter) Close() (err error) {
 	}
 	if w.gw != nil {
 		e := w.gw.Close()
-		if e != nil {
+		if e != nil && err == nil {
 			err = e
 		}
 		gzipWriterPools[w.level].Put(w.gw)
