@@ -44,11 +44,21 @@ package httpgzip // import "xi2.org/x/httpgzip"
 import (
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"mime"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+)
+
+// These constants are copied from the gzip package, so that code that
+// imports this package does not also have to import "compress/gzip".
+const (
+	NoCompression      = gzip.NoCompression
+	BestSpeed          = gzip.BestSpeed
+	BestCompression    = gzip.BestCompression
+	DefaultCompression = gzip.DefaultCompression
 )
 
 // DefaultContentTypes is the default list of content types for which
@@ -90,8 +100,25 @@ var DefaultContentTypes = []string{
 	"text/xml",
 }
 
-var gzipWriterPool = sync.Pool{
-	New: func() interface{} { return gzip.NewWriter(nil) },
+var gzipWriterPools = map[int]*sync.Pool{}
+
+func init() {
+	levels := map[int]struct{}{
+		DefaultCompression: struct{}{},
+		NoCompression:      struct{}{},
+	}
+	for i := BestSpeed; i <= BestCompression; i++ {
+		levels[i] = struct{}{}
+	}
+	for k := range levels {
+		level := k // create new variable for closure
+		gzipWriterPools[level] = &sync.Pool{
+			New: func() interface{} {
+				w, _ := gzip.NewWriterLevel(nil, level)
+				return w
+			},
+		}
+	}
 }
 
 var gzipBufPool = sync.Pool{
@@ -110,16 +137,20 @@ var gzipBufPool = sync.Pool{
 // when writing is finished in order to flush and close the
 // gzipResponseWriter. The slice encs must contain only encodings from
 // {encGzip,encIdentity} and contain at least one encoding.
+//
+// If a gzip.Writer is used in order to write a response it will use a
+// compression level of level.
 type gzipResponseWriter struct {
 	http.ResponseWriter
 	httpStatus int
 	ctMap      map[string]struct{}
 	encs       []encoding
+	level      int
 	gw         *gzip.Writer
 	buf        *bytes.Buffer
 }
 
-func newGzipResponseWriter(w http.ResponseWriter, ctMap map[string]struct{}, encs []encoding) *gzipResponseWriter {
+func newGzipResponseWriter(w http.ResponseWriter, ctMap map[string]struct{}, encs []encoding, level int) *gzipResponseWriter {
 	buf := gzipBufPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	return &gzipResponseWriter{
@@ -127,6 +158,7 @@ func newGzipResponseWriter(w http.ResponseWriter, ctMap map[string]struct{}, enc
 		httpStatus:     http.StatusOK,
 		ctMap:          ctMap,
 		encs:           encs,
+		level:          level,
 		buf:            buf}
 }
 
@@ -158,7 +190,7 @@ func (w *gzipResponseWriter) init() {
 		}
 	}
 	if useGzip {
-		w.gw = gzipWriterPool.Get().(*gzip.Writer)
+		w.gw = gzipWriterPools[w.level].Get().(*gzip.Writer)
 		w.gw.Reset(w.ResponseWriter)
 		w.Header().Del("Content-Length")
 		w.Header().Set("Content-Encoding", "gzip")
@@ -224,7 +256,7 @@ func (w *gzipResponseWriter) Close() (err error) {
 		if e != nil {
 			err = e
 		}
-		gzipWriterPool.Put(w.gw)
+		gzipWriterPools[w.level].Put(w.gw)
 		w.gw = nil
 	}
 	return err
@@ -312,6 +344,24 @@ func acceptedEncodings(r *http.Request) []encoding {
 // responses. This happens regardless of whether gzip encoding is
 // eventually used in the response or not.
 func NewHandler(h http.Handler, contentTypes []string) http.Handler {
+	gzh, _ := NewHandlerLevel(h, contentTypes, DefaultCompression)
+	return gzh
+}
+
+// NewHandlerLevel is like NewHandler but allows one to specify the
+// gzip compression level instead of assuming DefaultCompression.
+//
+// The compression level can be DefaultCompression, NoCompression, or
+// any integer value between BestSpeed and BestCompression
+// inclusive. The error returned will be nil if the level is valid.
+func NewHandlerLevel(h http.Handler, contentTypes []string, level int) (http.Handler, error) {
+	switch {
+	case level == DefaultCompression || level == NoCompression:
+		// no action needed
+	case level < BestSpeed || level > BestCompression:
+		return nil, fmt.Errorf(
+			"httpgzip: invalid compression level: %d", level)
+	}
 	if contentTypes == nil {
 		contentTypes = DefaultContentTypes
 	}
@@ -334,10 +384,10 @@ func NewHandler(h http.Handler, contentTypes []string) http.Handler {
 			// responses
 			r.Header.Del("Range")
 			// create new ResponseWriter
-			w = newGzipResponseWriter(w, ctMap, encs)
+			w = newGzipResponseWriter(w, ctMap, encs, level)
 			defer w.(*gzipResponseWriter).Close()
 		}
 		// call original handler's ServeHTTP
 		h.ServeHTTP(w, r)
-	})
+	}), nil
 }

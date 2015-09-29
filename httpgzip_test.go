@@ -34,6 +34,8 @@ import (
 	"xi2.org/x/httpgzip"
 )
 
+const defComp = httpgzip.DefaultCompression
+
 type fsRequestResponse struct {
 	reqFile    string
 	reqHeaders []string
@@ -336,11 +338,13 @@ func parseHeader(header string) (key, value string) {
 }
 
 // getPath starts a temporary test server using handler h (wrapped
-// with httpgzip) and requests the given path. The request has the
-// given headers added. getPath returns the http.Response (with Body
-// closed) and the result of reading the response Body.
-func getPath(t *testing.T, h http.Handler, path string, headers []string) (*http.Response, []byte) {
-	ts := httptest.NewServer(httpgzip.NewHandler(h, nil))
+// with httpgzip with the given compression level) and issues a
+// request for path. The request has the specified headers
+// added. getPath returns the http.Response (with Body closed) and the
+// result of reading the response Body.
+func getPath(t *testing.T, h http.Handler, level int, path string, headers []string) (*http.Response, []byte) {
+	gzh, _ := httpgzip.NewHandlerLevel(h, nil, level)
+	ts := httptest.NewServer(gzh)
 	defer ts.Close()
 	req, err := http.NewRequest("GET", ts.URL+path, nil)
 	if err != nil {
@@ -366,7 +370,7 @@ func getPath(t *testing.T, h http.Handler, path string, headers []string) (*http
 func TestFileServer(t *testing.T) {
 	h := http.FileServer(http.Dir("testdata"))
 	for _, fst := range fsTests {
-		res, body := getPath(t, h, "/"+fst.reqFile, fst.reqHeaders)
+		res, body := getPath(t, h, defComp, "/"+fst.reqFile, fst.reqHeaders)
 		if res.StatusCode != fst.resCode {
 			t.Fatalf(
 				"\nfile %s, request headers %v\n"+
@@ -405,7 +409,7 @@ func TestDetectContentType(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.Copy(w, bytes.NewBuffer(data))
 	})
-	res, _ := getPath(t, h, "/", []string{"Accept-Encoding: gzip"})
+	res, _ := getPath(t, h, defComp, "/", []string{"Accept-Encoding: gzip"})
 	expected := "text/plain; charset=utf-8"
 	if res.Header.Get("Content-Type") != expected {
 		t.Fatalf(
@@ -429,7 +433,7 @@ func TestPresetContentEncoding(t *testing.T) {
 		w.Header().Set("Content-Encoding", "text/foobar")
 		_, _ = io.Copy(w, bytes.NewBuffer(data))
 	})
-	res, body := getPath(t, h, "/", []string{"Accept-Encoding: gzip"})
+	res, body := getPath(t, h, defComp, "/", []string{"Accept-Encoding: gzip"})
 	expectedEnc := "text/foobar"
 	if res.Header.Get("Content-Encoding") != expectedEnc {
 		t.Fatalf(
@@ -441,5 +445,37 @@ func TestPresetContentEncoding(t *testing.T) {
 		t.Fatalf(
 			"\nexpected body length %d, got %d\n",
 			expectedLen, len(body))
+	}
+}
+
+// TestCompressionLevels creates a handler serving a text file and
+// requests that file with Accept-Encoding: gzip with different
+// compression levels set. It checks that the sizes of the responses
+// vary.
+func TestCompressionLevels(t *testing.T) {
+	data, err := ioutil.ReadFile(
+		filepath.Join("testdata", "4096bytes.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = io.Copy(w, bytes.NewBuffer(data))
+	})
+	for _, s := range []struct {
+		level int
+		len   int
+	}{
+		{httpgzip.NoCompression, 4124},
+		{httpgzip.BestSpeed, 2370},
+		{httpgzip.BestCompression, 2327},
+		{httpgzip.DefaultCompression, 2327},
+	} {
+		_, body :=
+			getPath(t, h, s.level, "/", []string{"Accept-Encoding: gzip"})
+		if len(body) != s.len {
+			t.Fatalf(
+				"\nlevel %d, expected body length %d, got %d\n",
+				s.level, s.len, len(body))
+		}
 	}
 }
