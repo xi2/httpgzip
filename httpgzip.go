@@ -39,17 +39,36 @@
 // For requests which prefer gzip encoding a Content-Type header is
 // set using http.DetectContentType if it is not set by the wrapped
 // handler.
+//
+// Using the optimized gzip compressor by Klaus Post
+//
+// By default, httpgzip uses the standard library gzip implementation
+// to minimize dependencies. However, there is an excellent optimized
+// gzip implementation written by Klaus Post that can increase
+// throughput. To use it instead, first install his compress library:
+//
+//   go get github.com/klauspost/compress
+//
+// and then install httpgzip using the "klauspost" build tag:
+//
+//   go install -tags klauspost xi2.org/x/httpgzip
+//
+// Credit is also due to Klaus for his blog post which inspired the
+// creation of this package and is recommended reading:
+//
+//   https://blog.klauspost.com/gzip-performance-for-go-webservers/
 package httpgzip // import "xi2.org/x/httpgzip"
 
 import (
 	"bytes"
-	"compress/gzip"
 	"fmt"
 	"mime"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
+
+	"xi2.org/x/httpgzip/internal/gzip"
 )
 
 // These constants are copied from the gzip package, so that code that

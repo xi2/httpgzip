@@ -39,8 +39,8 @@ const defComp = httpgzip.DefaultCompression
 type fsRequestResponse struct {
 	reqFile    string
 	reqHeaders []string
+	resGzip    bool
 	resCode    int
-	resLength  int
 	resHeaders []string
 }
 
@@ -50,8 +50,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "0bytes.txt",
 		reqHeaders: nil,
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  0,
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: ",
@@ -62,8 +62,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "0bytes.bin",
 		reqHeaders: nil,
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  0,
 		resHeaders: []string{
 			"Content-Type: application/octet-stream",
 			"Content-Encoding: ",
@@ -74,8 +74,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "0bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  0,
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: ",
@@ -86,8 +86,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "0bytes.bin",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  0,
 		resHeaders: []string{
 			"Content-Type: application/octet-stream",
 			"Content-Encoding: ",
@@ -98,8 +98,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "511bytes.txt",
 		reqHeaders: nil,
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  511,
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: ",
@@ -110,8 +110,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "511bytes.bin",
 		reqHeaders: nil,
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  511,
 		resHeaders: []string{
 			"Content-Type: application/octet-stream",
 			"Content-Encoding: ",
@@ -122,8 +122,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "511bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  511,
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: ",
@@ -134,8 +134,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "511bytes.bin",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  511,
 		resHeaders: []string{
 			"Content-Type: application/octet-stream",
 			"Content-Encoding: ",
@@ -146,8 +146,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "512bytes.txt",
 		reqHeaders: nil,
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  512,
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: ",
@@ -158,8 +158,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "512bytes.bin",
 		reqHeaders: nil,
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  512,
 		resHeaders: []string{
 			"Content-Type: application/octet-stream",
 			"Content-Encoding: ",
@@ -170,20 +170,20 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "512bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
+		resGzip:    true,
 		resCode:    http.StatusOK,
-		resLength:  339, // gzipped
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: gzip",
-			"Content-Length: 339",
+			"Content-Length: 512", // inverse match i.e. look for != 512
 			"Accept-Ranges: ",
 			"Vary: Accept-Encoding"},
 	},
 	{
 		reqFile:    "512bytes.bin",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  512,
 		resHeaders: []string{
 			"Content-Type: application/octet-stream",
 			"Content-Encoding: ",
@@ -194,8 +194,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: nil,
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  4096,
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: ",
@@ -206,8 +206,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "4096bytes.bin",
 		reqHeaders: nil,
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  4096,
 		resHeaders: []string{
 			"Content-Type: application/octet-stream",
 			"Content-Encoding: ",
@@ -218,8 +218,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
+		resGzip:    true,
 		resCode:    http.StatusOK,
-		resLength:  2327, // gzipped
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: gzip",
@@ -230,8 +230,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "4096bytes.bin",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  4096,
 		resHeaders: []string{
 			"Content-Type: application/octet-stream",
 			"Content-Encoding: ",
@@ -243,73 +243,73 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip;q=0.5"},
+		resGzip:    true,
 		resCode:    http.StatusOK,
-		resLength:  2327, // gzipped
 	},
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip;q=0"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  4096,
 	},
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: identity;q=0"},
+		resGzip:    false,
 		resCode:    http.StatusNotAcceptable,
-		resLength:  0,
 	},
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: identity;q=0.5, gzip;q=0.4"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  4096,
 	},
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: *"},
+		resGzip:    true,
 		resCode:    http.StatusOK,
-		resLength:  2327, // gzipped
 	},
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: *;q=0"},
+		resGzip:    false,
 		resCode:    http.StatusNotAcceptable,
-		resLength:  0,
 	},
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: *,gzip;q=0"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  4096,
 	},
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: deflate"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  4096,
 	},
 	// test gzip encoding of non compressible files when forced to by
 	// Accept-Encoding header
 	{
 		reqFile:    "4096bytes.bin",
 		reqHeaders: []string{"Accept-Encoding: identity;q=0,gzip"},
+		resGzip:    true,
 		resCode:    http.StatusOK,
-		resLength:  4124, // gzipped
 	},
 	// test websocket requests are not gzipped
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip", "Sec-WebSocket-Key: XX"},
+		resGzip:    false,
 		resCode:    http.StatusOK,
-		resLength:  4096,
 	},
 	// test Range requests are ignored when requesting gzip encoding
 	// and actioned otherwise
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip", "Range: bytes=500-"},
+		resGzip:    true,
 		resCode:    http.StatusOK,
-		resLength:  2327, // gzipped
 		resHeaders: []string{
 			"Accept-Ranges: ",
 			"Content-Length: ",
@@ -319,8 +319,8 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Range: bytes=500-"},
+		resGzip:    false,
 		resCode:    http.StatusPartialContent,
-		resLength:  3596, // partial
 		resHeaders: []string{
 			"Accept-Ranges: bytes",
 			"Content-Length: 3596",
@@ -335,6 +335,14 @@ func parseHeader(header string) (key, value string) {
 	key = header[:i]
 	value = strings.TrimLeft(header[i+1:], " ")
 	return
+}
+
+// isGzip returns true if the slice b is gzipped data
+func isGzip(b []byte) bool {
+	if len(b) < 2 {
+		return false
+	}
+	return b[0] == 0x1f && b[1] == 0x8b
 }
 
 // getPath starts a temporary test server using handler h (wrapped
@@ -380,19 +388,31 @@ func TestFileServer(t *testing.T) {
 					"expected status code %d, got %d\n",
 				fst.reqFile, fst.reqHeaders, fst.resCode, res.StatusCode)
 		}
-		if len(body) != fst.resLength {
+		if isGzip(body) != fst.resGzip {
 			t.Fatalf(
 				"\nfile %s, request headers %v\n"+
-					"expected body length %d, got %d\n",
-				fst.reqFile, fst.reqHeaders, fst.resLength, len(body))
+					"expected gzip status %v, got %v\n",
+				fst.reqFile, fst.reqHeaders, fst.resGzip, isGzip(body))
 		}
 		for _, h := range fst.resHeaders {
 			k, v := parseHeader(h)
-			if res.Header.Get(k) != v {
-				t.Fatalf(
-					"\nfile %s, request headers %v\n"+
-						"expected response header %s: %s, got %s: %s\n",
-					fst.reqFile, fst.reqHeaders, k, v, k, res.Header.Get(k))
+			if k == "Content-Length" && v != "" && isGzip(body) {
+				// Content-Length: XXX is special cased. if body is gzipped
+				// fail on match instead of a non-match
+				if res.Header.Get(k) == v {
+					t.Fatalf(
+						"\nfile %s, request headers %v\n"+
+							"unexpected response header %s: %s\n",
+						fst.reqFile, fst.reqHeaders, k, v)
+				}
+			} else {
+				if res.Header.Get(k) != v {
+					t.Fatalf(
+						"\nfile %s, request headers %v\n"+
+							"expected response header %s: %s, got %s: %s\n",
+						fst.reqFile, fst.reqHeaders,
+						k, v, k, res.Header.Get(k))
+				}
 			}
 		}
 	}
@@ -443,11 +463,9 @@ func TestPresetContentEncoding(t *testing.T) {
 			"\nexpected Content-Encoding %s, got %s\n",
 			expectedEnc, res.Header.Get("Content-Encoding"))
 	}
-	expectedLen := 4096 // not compressed by httpgzip
-	if len(body) != expectedLen {
+	if isGzip(body) {
 		t.Fatalf(
-			"\nexpected body length %d, got %d\n",
-			expectedLen, len(body))
+			"\nexpected non-gzipped body, got gzipped\n")
 	}
 }
 
@@ -464,21 +482,19 @@ func TestCompressionLevels(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.Copy(w, bytes.NewBuffer(data))
 	})
-	for _, s := range []struct {
-		level int
-		len   int
-	}{
-		{httpgzip.NoCompression, 4124},
-		{httpgzip.BestSpeed, 2370},
-		{httpgzip.BestCompression, 2327},
-		{httpgzip.DefaultCompression, 2327},
+	sizes := map[int]struct{}{}
+	for _, level := range []int{
+		httpgzip.NoCompression,
+		httpgzip.BestSpeed,
+		httpgzip.BestCompression,
 	} {
 		_, body :=
-			getPath(t, h, s.level, "/", []string{"Accept-Encoding: gzip"})
-		if len(body) != s.len {
+			getPath(t, h, level, "/", []string{"Accept-Encoding: gzip"})
+		if _, ok := sizes[len(body)]; ok {
 			t.Fatalf(
-				"\nlevel %d, expected body length %d, got %d\n",
-				s.level, s.len, len(body))
+				"\nlevel %d, body of length %d already received\n",
+				level, len(body))
 		}
+		sizes[len(body)] = struct{}{}
 	}
 }
