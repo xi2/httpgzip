@@ -300,6 +300,30 @@ var fsTests = []fsRequestResponse{
 		resCode:    http.StatusOK,
 		resLength:  4096,
 	},
+	// test Range requests are ignored when requesting gzip encoding
+	// and actioned otherwise
+	{
+		reqFile:    "4096bytes.txt",
+		reqHeaders: []string{"Accept-Encoding: gzip", "Range: bytes=500-"},
+		resCode:    http.StatusOK,
+		resLength:  2327,
+		resHeaders: []string{
+			"Accept-Ranges: ",
+			"Content-Length: ",
+			"Content-Range: ",
+		},
+	},
+	{
+		reqFile:    "4096bytes.txt",
+		reqHeaders: []string{"Range: bytes=500-"},
+		resCode:    http.StatusPartialContent,
+		resLength:  3596,
+		resHeaders: []string{
+			"Accept-Ranges: bytes",
+			"Content-Length: 3596",
+			"Content-Range: bytes 500-4095/4096",
+		},
+	},
 }
 
 // parseHeader returns a header key and value from a "Key: Value" string
