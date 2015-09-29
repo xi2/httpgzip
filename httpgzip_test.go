@@ -43,7 +43,8 @@ type fsRequestResponse struct {
 }
 
 var fsTests = []fsRequestResponse{
-	// test all test files with/without requesting gzip encoding
+	// test downloading of all test files in testdata with/without
+	// requesting gzip encoding
 	{
 		reqFile:    "0bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: "},
@@ -168,7 +169,7 @@ var fsTests = []fsRequestResponse{
 		reqFile:    "512bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
 		resCode:    http.StatusOK,
-		resLength:  339,
+		resLength:  339, // gzipped
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: gzip",
@@ -216,7 +217,7 @@ var fsTests = []fsRequestResponse{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip"},
 		resCode:    http.StatusOK,
-		resLength:  2327,
+		resLength:  2327, // gzipped
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: gzip",
@@ -306,7 +307,7 @@ var fsTests = []fsRequestResponse{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip", "Range: bytes=500-"},
 		resCode:    http.StatusOK,
-		resLength:  2327,
+		resLength:  2327, // gzipped
 		resHeaders: []string{
 			"Accept-Ranges: ",
 			"Content-Length: ",
@@ -317,7 +318,7 @@ var fsTests = []fsRequestResponse{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Range: bytes=500-"},
 		resCode:    http.StatusPartialContent,
-		resLength:  3596,
+		resLength:  3596, // partial
 		resHeaders: []string{
 			"Accept-Ranges: bytes",
 			"Content-Length: 3596",
