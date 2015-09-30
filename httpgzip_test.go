@@ -175,7 +175,7 @@ var fsTests = []fsRequestResponse{
 		resHeaders: []string{
 			"Content-Type: text/plain; charset=utf-8",
 			"Content-Encoding: gzip",
-			"Content-Length: 512", // inverse match i.e. look for != 512
+			"Content-Length: 512|NOMATCH", // look for value != 512
 			"Accept-Ranges: ",
 			"Vary: Accept-Encoding"},
 	},
@@ -396,10 +396,9 @@ func TestFileServer(t *testing.T) {
 		}
 		for _, h := range fst.resHeaders {
 			k, v := parseHeader(h)
-			if k == "Content-Length" && v != "" && isGzip(body) {
-				// Content-Length: XXX is special cased. if body is
-				// gzipped fail on match instead of a non-match. But
-				// still check a value is returned.
+			if strings.HasSuffix(v, "|NOMATCH") {
+				v = strings.TrimSuffix(v, "|NOMATCH")
+				// fail on match or empty value instead of a non-match
 				if res.Header.Get(k) == v || res.Header.Get(k) == "" {
 					t.Fatalf(
 						"\nfile %s, request headers %v\n"+
