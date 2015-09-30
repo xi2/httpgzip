@@ -53,7 +53,7 @@
 // Credit is also due to Klaus for his blog post which inspired the
 // creation of this package and is recommended reading:
 //
-//   https://blog.klauspost.com/gzip-performance-for-go-webservers/
+//   https://blog.klauspost.com/gzip-performance-for-go-webservers/
 package httpgzip // import "xi2.org/x/httpgzip"
 
 import (
