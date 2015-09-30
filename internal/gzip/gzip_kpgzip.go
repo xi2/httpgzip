@@ -1,4 +1,4 @@
-// +build klauspost
+// +build kpgzip
 
 /*
    Copyright 2015 The Httpgzip Authors. See the AUTHORS file at the

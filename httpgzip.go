@@ -46,14 +46,14 @@
 // to minimize dependencies. However, there is an excellent optimized
 // gzip implementation (https://github.com/klauspost/compress) written
 // by Klaus Post that can increase throughput. To use it instead,
-// download and install httpgzip with the "klauspost" build tag:
+// download and install httpgzip with the "kpgzip" build tag:
 //
-//   go get -tags klauspost xi2.org/x/httpgzip
+//   go get -tags kpgzip xi2.org/x/httpgzip
 //
 // and then build/install your own application with the same build
 // tag:
 //
-//   go install -tags klauspost <your-import-path>
+//   go install -tags kpgzip <your-import-path>
 //
 // Credit is also due to Klaus for his blog post which inspired the
 // creation of this package and is recommended reading:
