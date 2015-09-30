@@ -50,6 +50,11 @@
 //
 //   go get -tags klauspost xi2.org/x/httpgzip
 //
+// and then build/install your own application with the same build
+// tag:
+//
+//   go install -tags klauspost <your-import-path>
+//
 // Credit is also due to Klaus for his blog post which inspired the
 // creation of this package and is recommended reading:
 //
