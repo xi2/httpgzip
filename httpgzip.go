@@ -44,9 +44,9 @@
 //
 // By default, httpgzip uses the standard library gzip implementation
 // to minimize dependencies. However, there is an excellent optimized
-// gzip implementation written by Klaus Post that can increase
-// throughput. To use it instead, download and install httpgzip with
-// the "klauspost" build tag:
+// gzip implementation (https://github.com/klauspost/compress) written
+// by Klaus Post that can increase throughput. To use it instead,
+// download and install httpgzip with the "klauspost" build tag:
 //
 //   go get -tags klauspost xi2.org/x/httpgzip
 //
