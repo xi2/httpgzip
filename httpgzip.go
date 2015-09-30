@@ -69,7 +69,7 @@ import (
 )
 
 // These constants are copied from the gzip package, so that code that
-// imports this package does not also have to import "compress/gzip".
+// imports this package does not also have to import the gzip package.
 const (
 	NoCompression      = gzip.NoCompression
 	BestSpeed          = gzip.BestSpeed
