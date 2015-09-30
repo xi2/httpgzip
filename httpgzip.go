@@ -48,17 +48,17 @@
 // by Klaus Post that can increase throughput. To use it instead,
 // download and install httpgzip with the "kpgzip" build tag:
 //
-//   go get -tags kpgzip xi2.org/x/httpgzip
+//     go get -tags kpgzip xi2.org/x/httpgzip
 //
 // and then build/install your own application with the same build
 // tag:
 //
-//   go install -tags kpgzip <your-import-path>
+//     go install -tags kpgzip <your-import-path>
 //
 // Credit is also due to Klaus for his blog post which inspired the
 // creation of this package and is recommended reading:
 //
-//   https://blog.klauspost.com/gzip-performance-for-go-webservers/
+//     https://blog.klauspost.com/gzip-performance-for-go-webservers/
 package httpgzip // import "xi2.org/x/httpgzip"
 
 import (
