@@ -404,7 +404,7 @@ func TestFileServer(t *testing.T) {
 					t.Fatalf(
 						"\nfile %s, request headers %v\n"+
 							"unexpected response header %s: %s\n",
-						fst.reqFile, fst.reqHeaders, k, v)
+						fst.reqFile, fst.reqHeaders, k, res.Header.Get(k))
 				}
 			} else {
 				if res.Header.Get(k) != v {
