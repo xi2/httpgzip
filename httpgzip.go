@@ -23,22 +23,20 @@
 // set using http.DetectContentType if it is not set by the wrapped
 // handler.
 //
-// Using an optimized gzip compressor
+// Gzip implementation
 //
-// By default, httpgzip uses the standard library gzip implementation
-// to minimize dependencies. However, there is an excellent optimized
-// gzip implementation (https://github.com/klauspost/compress) written
-// by Klaus Post that can increase throughput. To use it instead,
-// download and install httpgzip with the "kpgzip" build tag:
+// By default, httpgzip uses the optimized gzip implementation from
+// https://github.com/klauspost/compress. To use the standard library
+// gzip implementation instead, download and install httpgzip with the
+// "stdgzip" build tag:
 //
-//     go get -tags kpgzip xi2.org/x/httpgzip
+//     go get -tags stdgzip xi2.org/x/httpgzip
 //
-// and then build/install your own application with the same build
-// tag:
+// or simply alter the import line in httpgzip.go.
 //
-//     go install -tags kpgzip <your-import-path>
+// Thanks
 //
-// Credit is also due to Klaus for his blog post which inspired the
+// Thanks are due to Klaus Post for his blog post which inspired the
 // creation of this package and is recommended reading:
 //
 //     https://blog.klauspost.com/gzip-performance-for-go-webservers/
