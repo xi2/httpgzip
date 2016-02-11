@@ -5,7 +5,7 @@
 // +build stdgzip
 
 // Package gzip is a partial implementation of the gzip API using the
-// standard libary compress/gzip package. It contains the part of the
+// standard library compress/gzip package. It contains the part of the
 // API used by httpgzip.
 package gzip
 
