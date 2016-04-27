@@ -467,7 +467,6 @@ func TestCompressionLevels(t *testing.T) {
 	})
 	sizes := map[int]struct{}{}
 	for _, level := range []int{
-		httpgzip.NoCompression,
 		httpgzip.BestSpeed,
 		httpgzip.BestCompression,
 	} {
