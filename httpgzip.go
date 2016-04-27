@@ -69,6 +69,7 @@ const (
 // https://html5boilerplate.com/.
 var DefaultContentTypes = []string{
 	"application/atom+xml",
+	"application/font-sfnt",
 	"application/javascript",
 	"application/json",
 	"application/ld+json",
