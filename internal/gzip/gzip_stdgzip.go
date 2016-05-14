@@ -1,5 +1,5 @@
 // Copyright (c) 2015 The Httpgzip Authors.
-// Use of this source code is governed by a Expat-style
+// Use of this source code is governed by an Expat-style
 // MIT license that can be found in the LICENSE file.
 
 // +build stdgzip
