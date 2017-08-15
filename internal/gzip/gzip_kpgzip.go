@@ -2,7 +2,7 @@
 // Use of this source code is governed by an Expat-style
 // MIT license that can be found in the LICENSE file.
 
-// +build !stdgzip
+// +build kpgzip
 
 // Package gzip is a partial implementation of the gzip API using the
 // github.com/klauspost/compress/gzip package. It contains the part of

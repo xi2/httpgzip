@@ -25,12 +25,12 @@
 //
 // Gzip implementation
 //
-// By default, httpgzip uses the optimized gzip implementation from
-// https://github.com/klauspost/compress. To use the standard library
-// gzip implementation instead, download and install httpgzip with the
-// "stdgzip" build tag:
+// By default, httpgzip uses the standard library gzip
+// implementation. To use the optimized gzip implementation from
+// https://github.com/klauspost/compress instead, download and install
+// httpgzip with the "kpgzip" build tag:
 //
-//     go get -tags stdgzip xi2.org/x/httpgzip
+//     go get -tags kpgzip xi2.org/x/httpgzip
 //
 // or simply alter the import line in httpgzip.go.
 //
