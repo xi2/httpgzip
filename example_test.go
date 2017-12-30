@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"xi2.org/x/httpgzip"
+	"github.com/xi2/httpgzip"
 )
 
 // This example is the http.FileServer example from the standard

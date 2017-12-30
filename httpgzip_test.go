@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	"xi2.org/x/httpgzip"
+	"github.com/xi2/httpgzip"
 )
 
 const defComp = httpgzip.DefaultCompression

@@ -30,7 +30,7 @@
 // https://github.com/klauspost/compress instead, download and install
 // httpgzip with the "kpgzip" build tag:
 //
-//     go get -tags kpgzip xi2.org/x/httpgzip
+//     go get -tags kpgzip github.com/xi2/httpgzip
 //
 // or simply alter the import line in httpgzip.go.
 //
@@ -40,7 +40,7 @@
 // creation of this package and is recommended reading:
 //
 //     https://blog.klauspost.com/gzip-performance-for-go-webservers/
-package httpgzip // import "xi2.org/x/httpgzip"
+package httpgzip
 
 import (
 	"bytes"
@@ -51,7 +51,7 @@ import (
 	"strings"
 	"sync"
 
-	"xi2.org/x/httpgzip/internal/gzip"
+	"github.com/xi2/httpgzip/internal/gzip"
 )
 
 // These constants are copied from the gzip package, so that code that
