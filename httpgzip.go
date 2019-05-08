@@ -287,8 +287,9 @@ func acceptedEncodings(r *http.Request) []encoding {
 	if h == "" {
 		return []encoding{encIdentity}
 	}
-	gzip := float64(-1)    // -1 means not accepted, 0 -> 1 means value of q
-	identity := float64(0) // -1 means not accepted, 0 -> 1 means value of q
+	gzip := float64(-1)     // q-value: -1 means "not present in header"
+	identity := float64(-1) // q-value: -1 means "not present in header"
+	any := float64(-1)      // q-value: -1 means "not present in header"
 	for _, s := range strings.Split(h, ",") {
 		f := strings.Split(s, ";")
 		f0 := strings.ToLower(strings.Trim(f[0], " "))
@@ -303,25 +304,32 @@ func acceptedEncodings(r *http.Request) []encoding {
 				}
 			}
 		}
-		if (f0 == "gzip" || f0 == "*") && q > gzip && swk == "" {
+		if f0 == "gzip" && q > gzip && swk == "" {
 			gzip = q
 		}
-		if (f0 == "gzip" || f0 == "*") && q == 0 {
-			gzip = -1
-		}
-		if (f0 == "identity" || f0 == "*") && q > identity {
+		if f0 == "identity" && q > identity {
 			identity = q
 		}
-		if (f0 == "identity" || f0 == "*") && q == 0 {
-			identity = -1
+		if f0 == "*" && q > any {
+			any = q
 		}
 	}
+	if identity == -1 {
+		if any >= 0 {
+			identity = any
+		} else {
+			identity = 1
+		}
+	}
+	if gzip == -1 && any >= 0 {
+		gzip = any
+	}
 	switch {
-	case gzip == -1 && identity == -1:
+	case gzip <= 0 && identity <= 0:
 		return []encoding{}
-	case gzip == -1:
+	case gzip <= 0:
 		return []encoding{encIdentity}
-	case identity == -1:
+	case identity <= 0:
 		return []encoding{encGzip}
 	case identity > gzip:
 		return []encoding{encIdentity, encGzip}
