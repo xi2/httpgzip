@@ -321,7 +321,7 @@ func acceptedEncodings(r *http.Request) []encoding {
 			identity = 1
 		}
 	}
-	if gzip == -1 && any >= 0 {
+	if gzip == -1 && any >= 0 && swk == "" {
 		gzip = any
 	}
 	switch {
