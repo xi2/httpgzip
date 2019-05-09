@@ -226,7 +226,7 @@ var fsTests = []fsRequestResponse{
 	{
 		reqFile:    "4096bytes.txt",
 		reqHeaders: []string{"Accept-Encoding: gzip;q=0.5"},
-		resGzip:    true,
+		resGzip:    false,
 		resCode:    http.StatusOK,
 	},
 	{
