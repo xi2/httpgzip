@@ -11,8 +11,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/klauspost/compress/gzip"
 
 	"github.com/xi2/httpgzip"
 )
@@ -478,5 +481,46 @@ func TestCompressionLevels(t *testing.T) {
 				level, len(body))
 		}
 		sizes[len(body)] = struct{}{}
+	}
+}
+
+// TestGzipped creates a handler serving a gziped content
+func TestGzipped(t *testing.T) {
+	// create buffer to store gzip data
+	var buf bytes.Buffer
+	// create the gzipped content
+	gz := gzip.NewWriter(&buf)
+	// ungzipped message
+	contents := []byte(strings.Repeat("Hello to raw gzipped content body!!", 200))
+	// write it into buffer
+	gz.Write(contents)
+	// closes gzip writer
+	gz.Close()
+	// bytes slice of message
+	contents = buf.Bytes()
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// set default page headers
+		w.Header().Set("Content-Length", strconv.Itoa(len(contents))) // the compressed messagem length
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		// disable response compression because the contents was compressed
+		httpgzip.Gzipped(r)
+		// write compressed message to response
+		w.Write(contents)
+	})
+	res, body := getPath(t, handler, defComp, "/", []string{"Accept-Encoding: *"})
+	expectedEnc :="gzip"
+	if res.Header.Get("Content-Encoding") != expectedEnc {
+		t.Fatalf(
+			"\nexpected Content-Encoding %s, got %s\n",
+			expectedEnc, res.Header.Get("Content-Encoding"))
+	}
+	if !isGzip(body) {
+		t.Fatalf(
+			"\nexpected gzipped body, got non-gzipped\n")
+	}
+	if bytes.Compare(body, contents) != 0 {
+		t.Fatalf(
+			"\nbad response body\n")
 	}
 }
