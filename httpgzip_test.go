@@ -509,11 +509,17 @@ func TestGzipped(t *testing.T) {
 		w.Write(contents)
 	})
 	res, body := getPath(t, handler, defComp, "/", []string{"Accept-Encoding: *"})
-	expectedEnc :="gzip"
+	expectedEnc := "gzip"
 	if res.Header.Get("Content-Encoding") != expectedEnc {
 		t.Fatalf(
 			"\nexpected Content-Encoding %s, got %s\n",
 			expectedEnc, res.Header.Get("Content-Encoding"))
+	}
+	expectedType := "text/html; charset=utf-8"
+	if res.Header.Get("Content-Type") != expectedType {
+		t.Fatalf(
+			"\nexpected Content-Type %s, got %s\n",
+			expectedType, res.Header.Get("Content-Type"))
 	}
 	if !isGzip(body) {
 		t.Fatalf(
