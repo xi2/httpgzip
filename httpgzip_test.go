@@ -366,7 +366,7 @@ func getPath(t *testing.T, h http.Handler, level int, path string, headers []str
 // serving the testdata directory.
 func TestFileServer(t *testing.T) {
 	h := http.FileServer(http.Dir("testdata"))
-	for _, fst := range fsTests {
+	for i, fst := range fsTests {
 		res, body := getPath(t, h, defComp, "/"+fst.reqFile, fst.reqHeaders)
 		if res.StatusCode != fst.resCode {
 			t.Fatalf(
@@ -376,9 +376,9 @@ func TestFileServer(t *testing.T) {
 		}
 		if isGzip(body) != fst.resGzip {
 			t.Fatalf(
-				"\nfile %s, request headers %v\n"+
+				"\n#%d# file %s, request headers %v\n"+
 					"expected gzip status %v, got %v\n",
-				fst.reqFile, fst.reqHeaders, fst.resGzip, isGzip(body))
+				i, fst.reqFile, fst.reqHeaders, fst.resGzip, isGzip(body))
 		}
 		for _, h := range fst.resHeaders {
 			k, v := parseHeader(h)
@@ -507,6 +507,52 @@ func TestGzipped(t *testing.T) {
 		httpgzip.Gzipped(r)
 		// write compressed message to response
 		w.Write(contents)
+	})
+	res, body := getPath(t, handler, defComp, "/", []string{"Accept-Encoding: *"})
+	expectedEnc := "gzip"
+	if res.Header.Get("Content-Encoding") != expectedEnc {
+		t.Fatalf(
+			"\nexpected Content-Encoding %s, got %s\n",
+			expectedEnc, res.Header.Get("Content-Encoding"))
+	}
+	expectedType := "text/html; charset=utf-8"
+	if res.Header.Get("Content-Type") != expectedType {
+		t.Fatalf(
+			"\nexpected Content-Type %s, got %s\n",
+			expectedType, res.Header.Get("Content-Type"))
+	}
+	if !isGzip(body) {
+		t.Fatalf(
+			"\nexpected gzipped body, got non-gzipped\n")
+	}
+	if bytes.Compare(body, contents) != 0 {
+		t.Fatalf(
+			"\nbad response body\n")
+	}
+}
+
+func TestGzippedReader(t *testing.T) {
+	// create buffer to store gzip data
+	var buf bytes.Buffer
+	// create the gzipped content
+	gz := gzip.NewWriter(&buf)
+	// ungzipped message
+	contents := []byte(strings.Repeat("Hello to raw gzipped content body!!", 200))
+	// write it into buffer
+	gz.Write(contents)
+	// closes gzip writer
+	gz.Close()
+	// bytes slice of message
+	contents = buf.Bytes()
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// set default page headers
+		w.Header().Set("Content-Length", strconv.Itoa(len(contents))) // the compressed messagem length
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		// write compressed message to response
+		w.(io.ReaderFrom).ReadFrom(httpgzip.NewGzReader(&buf, func() (io.Reader, error) {
+			return bytes.NewBuffer(contents), nil
+		}))
 	})
 	res, body := getPath(t, handler, defComp, "/", []string{"Accept-Encoding: *"})
 	expectedEnc := "gzip"

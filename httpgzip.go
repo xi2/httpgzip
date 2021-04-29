@@ -46,6 +46,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"mime"
 	"net/http"
 	"strconv"
@@ -129,6 +130,25 @@ var gzipBufPool = sync.Pool{
 	New: func() interface{} { return new(bytes.Buffer) },
 }
 
+// A GzReader
+type GzReader interface {
+	io.Reader
+	GzipReader() (io.Reader, error)
+}
+
+type gzReader struct {
+	io.Reader
+	reader func()(io.Reader, error)
+}
+
+func NewGzReader(reader io.Reader, r func() (io.Reader, error)) GzReader {
+	return &gzReader{reader, r}
+}
+
+func (g *gzReader) GzipReader() (io.Reader, error) {
+	return g.reader()
+}
+
 // A gzipResponseWriter is a modified http.ResponseWriter. It adds
 // gzip compression to certain responses, and there are two cases
 // where this is done. Case 1 is when encs only allows gzip encoding
@@ -154,6 +174,7 @@ type gzipResponseWriter struct {
 	buf         *bytes.Buffer
 	compressed  *bool
 	initialized bool
+	seekable bool
 }
 
 func newGzipResponseWriter(w http.ResponseWriter, ctMap map[string]struct{}, encs []encoding, level int, compressed *bool) *gzipResponseWriter {
@@ -167,6 +188,17 @@ func newGzipResponseWriter(w http.ResponseWriter, ctMap map[string]struct{}, enc
 		level:          level,
 		buf:            buf,
 		compressed:     compressed}
+}
+
+func (w *gzipResponseWriter) ReadFrom(r io.Reader) (n int64, err error) {
+	if closer, ok := r.(io.Closer); ok {
+		defer closer.Close()
+	}
+	if _, ok := r.(GzReader); ok {
+		*w.compressed = true
+	}
+	w.init()
+	return io.Copy(w.ResponseWriter, r)
 }
 
 // init gets called by Write once at least 512 bytes have been written
@@ -415,7 +447,7 @@ func NewHandlerLevel(h http.Handler, contentTypes []string, level int) (http.Han
 			r.Header.Del("Range")
 			// create the request config
 			var compressed bool
-			r = r.WithContext(context.WithValue(r.Context(), contextKey{}, &compressed))
+			r = r.WithContext(context.WithValue(r.Context(), contextKey{"compressed"}, &compressed))
 			// create new ResponseWriter
 			w = newGzipResponseWriter(w, ctMap, encs, level, &compressed)
 			defer w.(*gzipResponseWriter).Close()
@@ -425,11 +457,11 @@ func NewHandlerLevel(h http.Handler, contentTypes []string, level int) (http.Han
 	}), nil
 }
 
-type contextKey struct{}
+type contextKey struct{key string}
 
 // Gzipped allow to writes raw gziped contents to response writer.
 func Gzipped(r *http.Request) {
-	if value := r.Context().Value(contextKey{}); value != nil {
+	if value := r.Context().Value(contextKey{"compressed"}); value != nil {
 		*value.(*bool) = true
 	}
 }
@@ -439,7 +471,7 @@ func Gzipped(r *http.Request) {
 // This function check request context to detect if gzipResponseWriter is initialized on
 // gziped Handler.
 func Accepts(r *http.Request) bool {
-	if value := r.Context().Value(contextKey{}); value != nil {
+	if value := r.Context().Value(contextKey{"compressed"}); value != nil {
 		return true
 	}
 	return false
